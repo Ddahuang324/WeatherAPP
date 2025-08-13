@@ -37,6 +37,9 @@ qt_add_qml_module(appWeatherAPP
         QMLFrontend/components/TempratureTrend/TempratureTrendItem.qml
         QMLFrontend/components/TempratureTrend/TempratureTrendItemDelegate.qml
         QMLFrontend/components/TempratureTrend/TemperatureChart.qml
+        QMLFrontend/components/DetailedInfo/DetailedInfoItem.qml
+        QMLFrontend/components/DetailedInfo/DetailedInfoLabel.qml
+        QMLFrontend/components/DetailedInfo/qmldir
         QMLFrontend/components/qmldir
         QMLFrontend/views/TodayWeatherView.qml
         QMLFrontend/views/TemperatureTrendView.qml

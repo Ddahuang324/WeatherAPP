@@ -16,3 +16,7 @@ TodaysWeatherItem 1.0 TodaysWeather/TodaysWeatherItem.qml
 # Temperature Trend components
 TempratureTrendItem 1.0 TempratureTrend/TempratureTrendItem.qml
 TempratureTrendItemDelegate 1.0 TempratureTrend/TempratureTrendItemDelegate.qml
+
+# Detailed Info components
+DetailedInfoLabel 1.0 DetailedInfo/DetailedInfoLabel.qml
+DetailedInfoItem 1.0 DetailedInfo/DetailedInfoItem.qml

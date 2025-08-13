@@ -35,18 +35,19 @@ Rectangle {
 
     // 主要内容布局
     Column {
-        anchors.fill: parent
-        anchors.margins: 20
+        width: parent.width - 40
+        height: parent.height - 40
+        anchors.centerIn: parent
         spacing: 20
 
-        // 城市名称
-        Text {
-            id: cityNameComponent
-            text: tempratureTrendItem.currentCityName
-            font.pixelSize: 32
-            font.bold: true
-            color: "white"
-            anchors.left: parent.left
+        //复用组件：城市名称
+        Components.CityNameLabel{
+            id:cityNameComponent
+            cityName : tempratureTrendItem.currentCityName
+            fontSize : 50
+            font.bold : true
+            anchors.left: undefined
+            anchors.top: undefined
         }
 
         // 左侧列表/右侧视图
