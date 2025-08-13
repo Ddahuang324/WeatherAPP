@@ -1,41 +1,64 @@
 import QtQuick
 import "../components"
 import "../animations"
+import "../views"
 
-Rectangle {
+BaseView {
     id: sunriseSunsetView
-    color: "transparent"
     
-    // 数据属性
-    property string cityName: "北京"
-    property string sunriseTime: "06:30"
-    property string sunsetTime: "18:45"
-    property string currentTime: "12:30"
+    // 视图标识
+    viewId: "sunrise_sunset"
+    viewName: "日出日落"
     
-    // 添加数据更新函数
-    function updateCityData(cityData) {
-        if (cityData && cityData.sunriseInfo) {
-            cityName = cityData.cityName || "暂无城市"
-            sunriseTime = cityData.sunriseInfo.sunrise || "--:--"
-            sunsetTime = cityData.sunriseInfo.sunset || "--:--"
-            // currentTime 可以从系统时间获取或从数据中获取
-            var now = new Date()
-            currentTime = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0')
-        } else if (cityData) {
-            cityName = cityData.cityName || "暂无城市"
-        }
-    }
+    // 当前时间属性
+    property string currentTime: getCurrentTime()
     
     // 使用新的日出日落组件
     SunsetSunriseitem {
         anchors.centerIn: parent
-        sunriseTime: sunriseSunsetView.sunriseTime
-        sunsetTime: sunriseSunsetView.sunsetTime
+        sunriseTime: sunriseSunsetView.weatherData && sunriseSunsetView.weatherData.sunriseInfo ? 
+                    sunriseSunsetView.weatherData.sunriseInfo.sunrise : "--:--"
+        sunsetTime: sunriseSunsetView.weatherData && sunriseSunsetView.weatherData.sunriseInfo ? 
+                   sunriseSunsetView.weatherData.sunriseInfo.sunset : "--:--"
         currentTime: sunriseSunsetView.currentTime
     }
     
-    // 拖拽区域
-    DragArea {
-        anchors.fill: parent
+    // 定时器更新当前时间
+    Timer {
+        interval: 60000 // 每分钟更新一次
+        running: true
+        repeat: true
+        onTriggered: {
+            currentTime = getCurrentTime()
+        }
+    }
+    
+    // 获取当前时间
+    function getCurrentTime() {
+        var now = new Date()
+        return now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0')
+    }
+    
+    // 重写数据更新函数
+    function updateCityData(data) {
+        weatherData = data
+        if (data) {
+            setLoading(false)
+            setError("")
+        }
+    }
+    
+    // 视图激活时的处理
+    function onViewActivated() {
+        console.log("Sunrise Sunset View activated")
+        currentTime = getCurrentTime() // 激活时立即更新时间
+        if (viewModel) {
+            viewModel.loadWeatherData()
+        }
+    }
+    
+    // 视图失活时的处理
+    function onViewDeactivated() {
+        console.log("Sunrise Sunset View deactivated")
     }
 }

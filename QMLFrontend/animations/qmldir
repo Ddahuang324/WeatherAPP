@@ -6,3 +6,4 @@ GradientBackground 1.0 GradientBackground.qml
 SidebarStyle 1.0 SidebarStyle.qml
 RecentCitiesPagerStyle 1.0 RecentCitiesPagerStyle.qml
 ContentAreaStyle 1.0 ContentAreaStyle.qml
+PageTransition 1.0 PageTransition.qml

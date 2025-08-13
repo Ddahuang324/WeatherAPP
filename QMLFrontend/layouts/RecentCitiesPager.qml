@@ -32,8 +32,7 @@ Rectangle {
         }
         
         Component.onCompleted: {
-            // 初始化示例数据（可选）
-            initializeWithSampleData();
+            // 组件初始化完成
         }
     }
     
@@ -64,7 +63,10 @@ Rectangle {
             inactiveColor: Qt.rgba(1, 1, 1, 0.3)
             
             onPageClicked: function(pageIndex) {
-                citiesManager.switchToCity(pageIndex);
+                if (citiesManager.weatherViewModel) {
+                    citiesManager.weatherViewModel.switchToCity(pageIndex);
+                    citiesManager.currentIndex = pageIndex;
+                }
             }
         }
         

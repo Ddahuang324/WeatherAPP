@@ -26,6 +26,7 @@ qt_add_qml_module(appWeatherAPP
         QMLFrontend/animations/SidebarStyle.qml
         QMLFrontend/animations/RecentCitiesPagerStyle.qml
         QMLFrontend/animations/ContentAreaStyle.qml
+        QMLFrontend/animations/PageTransition.qml
         QMLFrontend/animations/qmldir
         QMLFrontend/components/common/WindowControls.qml
         QMLFrontend/components/common/SearchBar.qml
@@ -46,11 +47,20 @@ qt_add_qml_module(appWeatherAPP
         QMLFrontend/components/RecentCityPager/RecentCitiesManager.qml
         QMLFrontend/components/RecentCityPager/qmldir
         QMLFrontend/components/qmldir
+        QMLFrontend/views/BaseView.qml
         QMLFrontend/views/TodayWeatherView.qml
         QMLFrontend/views/TemperatureTrendView.qml
         QMLFrontend/views/DetailedInfoView.qml
         QMLFrontend/views/SunriseSunsetView.qml
         QMLFrontend/views/qmldir
+        QMLFrontend/models/AppStateManager.qml
+        QMLFrontend/models/WeatherDataModel.qml
+        QMLFrontend/models/qmldir
+        QMLFrontend/viewmodels/WeatherViewModel.qml
+        QMLFrontend/viewmodels/NavigationViewModel.qml
+        QMLFrontend/viewmodels/qmldir
+        QMLFrontend/services/WeatherDataService.qml
+        QMLFrontend/services/qmldir
 )
 
 set_target_properties(appWeatherAPP PROPERTIES

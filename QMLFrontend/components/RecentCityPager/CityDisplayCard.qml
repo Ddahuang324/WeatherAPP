@@ -5,9 +5,9 @@ Item {
     id: cityDisplayCard
     
     // 城市数据属性
-    property string cityName: "暂无城市"
+    property string cityName: ""
     property string temperature: "--°C"
-    property string weatherIcon: "🌤️"
+    property string weatherIcon: ""
     property string weatherDescription: "未知"
     property string maxMinTemp: "--°C / --°C"
     

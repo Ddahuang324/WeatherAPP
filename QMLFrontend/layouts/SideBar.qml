@@ -12,6 +12,10 @@ Rectangle {
     
     // 背景源属性
     property Item backgroundSource: null
+    
+    // 视图模型依赖
+    property var navigationViewModel: null
+    property var weatherViewModel: null
 
     // 侧边栏样式
     SidebarStyle {
@@ -40,7 +44,12 @@ Rectangle {
         
         onSearchRequested: function(searchText) {
             console.log("搜索:", searchText)
-            // TODO: 实现搜索功能
+            if (weatherViewModel) {
+                weatherViewModel.searchCities(searchText, function(results) {
+                    console.log("搜索结果:", results)
+                    // TODO: 显示搜索结果
+                })
+            }
         }
     }
 
@@ -52,16 +61,16 @@ Rectangle {
         anchors.right: parent.right 
         anchors.bottomMargin: 100
         
+        // 当前选中的视图
+        currentView: navigationViewModel ? navigationViewModel.currentView : "today_weather"
+        
         onMenuItemClicked: function(itemId) {
             console.log("点击菜单项:", itemId)
-            // 通知父组件切换视图
-            sidebar.viewChangeRequested(itemId)
+            if (navigationViewModel) {
+                navigationViewModel.navigateToView(itemId)
+            }
         }
     }
-
-    // 视图切换请求信号
-    signal viewChangeRequested(string viewName)
-
 
     // 拖拽区域（用于移动窗口）
     DragArea {
@@ -70,5 +79,12 @@ Rectangle {
         anchors.topMargin: 100 // 避免与窗口控制按钮和搜索栏冲突
         anchors.bottomMargin: 200  // 避免与功能按钮区域冲突
     }
-
+    
+    // 监听导航变化
+    Connections {
+        target: navigationViewModel
+        function onViewChanged(viewId) {
+            console.log("SideBar: 视图已切换到", viewId)
+        }
+    }
 }

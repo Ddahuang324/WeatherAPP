@@ -10,12 +10,14 @@ Rectangle {
     // 可配置属性
     property string iconText: "📱"
     property string labelText: "菜单项"
+    property string itemId: ""
+    property bool isSelected: false
     property bool isHovered: mouseArea.containsMouse
     
     // 点击事件信号
     signal clicked()
     
-    color: isHovered ? Qt.rgba(0.3, 0.5, 0.7, 0.5) : Qt.rgba(0.53, 0.81, 0.98, 0.3)
+    color: isSelected ? Qt.rgba(0.2, 0.4, 0.8, 0.7) : (isHovered ? Qt.rgba(0.3, 0.5, 0.7, 0.5) : Qt.rgba(0.53, 0.81, 0.98, 0.3))
     anchors.horizontalCenter: parent.horizontalCenter
     
     Behavior on color {

@@ -1,35 +1,48 @@
 import QtQuick
-import QtQuick.Controls
-import "../components" as Components
+import "../components"
 import "../animations"
+import "../views"
 
-Rectangle{
-    color: "transparent"
+BaseView {
+    id: todayWeatherView
     
-    // 添加数据更新函数
-    function updateCityData(cityData) {
-        if (cityData) {
-            todaysWeatherItem.cityName = cityData.cityName || "暂无城市"
-            todaysWeatherItem.currentTempreture = cityData.temperature || "--°C"
-            todaysWeatherItem.weatherDescriptionIcon = cityData.weatherIcon || "🌤️"
-            todaysWeatherItem.weatherDescription = cityData.weatherDescription || "未知"
-            todaysWeatherItem.maxMinTempreture = cityData.maxMinTemp || "--°C / --°C"
+    // 视图标识
+    viewId: "today_weather"
+    viewName: "今日天气"
+    
+    // 今日天气组件
+    TodaysWeatherItem {
+        id: weatherItem
+        anchors.fill: parent
+        anchors.margins: 20
+        
+        // 绑定数据
+        cityName: todayWeatherView.weatherData ? todayWeatherView.weatherData.cityName : "暂无城市"
+        currentTempreture: todayWeatherView.weatherData ? todayWeatherView.weatherData.temperature : "--°C"
+        weatherDescriptionIcon: todayWeatherView.weatherData ? todayWeatherView.weatherData.weatherIcon : "🌤️"
+        weatherDescription: todayWeatherView.weatherData ? todayWeatherView.weatherData.weatherDescription : "未知"
+        maxMinTempreture: todayWeatherView.weatherData ? todayWeatherView.weatherData.maxMinTemp : "--°C / --°C"
+    }
+    
+    // 重写数据更新函数
+    function updateCityData(data) {
+        weatherData = data
+        if (data) {
+            setLoading(false)
+            setError("")
         }
     }
     
-    Column {
-        id: todayWeatherColumn
-        anchors.fill: parent
-        spacing: 20
-
-        //城市天气
-        Components.TodaysWeatherItem {
-            id: todaysWeatherItem
-            cityName: "北京"
-            currentTempreture: "25°C"
-            weatherDescriptionIcon: "☀️"
-            weatherDescription: "晴"
-            maxMinTempreture: "25°C / 20°C"
+    // 视图激活时的处理
+    function onViewActivated() {
+        console.log("Today Weather View activated")
+        if (viewModel) {
+            viewModel.loadWeatherData()
         }
+    }
+    
+    // 视图失活时的处理
+    function onViewDeactivated() {
+        console.log("Today Weather View deactivated")
     }
 }

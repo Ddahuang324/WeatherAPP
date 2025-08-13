@@ -1,64 +1,49 @@
 import QtQuick
-import "../components/TempratureTrend"
-import "../components/common"
+import "../components"
 import "../animations"
+import "../views"
 
-Rectangle {
+BaseView {
     id: temperatureTrendView
-    color: "transparent"
     
-    // 数据属性
-    property var recentDaysName: [
-        "今天", "明天", "后天", "周四", "周五", "周六", "周日"
-    ]
+    // 视图标识
+    viewId: "temperature_trend"
+    viewName: "温度趋势"
     
-    property var recentDaysMaxMinTempreture: [
-        "22°C / 12°C",
-        "25°C / 15°C", 
-        "20°C / 10°C",
-        "18°C / 8°C",
-        "23°C / 13°C",
-        "26°C / 16°C",
-        "24°C / 14°C"
-    ]
+    // 温度趋势组件
+    TempratureTrendItem {
+        id: trendItem
+        anchors.centerIn: parent
+        
+        // 绑定数据
+        currentCityName: temperatureTrendView.weatherData ? temperatureTrendView.weatherData.cityName : "暂无城市"
+        recentDaysName: temperatureTrendView.weatherData && temperatureTrendView.weatherData.weeklyForecast ? 
+                       temperatureTrendView.weatherData.weeklyForecast.recentDaysName : []
+        recentDaysMaxMinTempreture: temperatureTrendView.weatherData && temperatureTrendView.weatherData.weeklyForecast ? 
+                                   temperatureTrendView.weatherData.weeklyForecast.recentDaysMaxMinTempreture : []
+        recentDaysWeatherDescriptionIcon: temperatureTrendView.weatherData && temperatureTrendView.weatherData.weeklyForecast ? 
+                                         temperatureTrendView.weatherData.weeklyForecast.recentDaysWeatherDescriptionIcon : []
+    }
     
-    property var recentDaysWeatherDescriptionIcon: [
-        "☀️", "⛅", "🌧️", "☀️", "🌤️", "☀️", "⛅"
-    ]
-    
-    property string currentCityName: "北京"
-    
-    // 添加数据更新函数
-    function updateCityData(cityData) {
-        if (cityData && cityData.weeklyForecast) {
-            currentCityName = cityData.cityName || "暂无城市"
-            recentDaysName = cityData.weeklyForecast.recentDaysName || recentDaysName
-            recentDaysMaxMinTempreture = cityData.weeklyForecast.recentDaysMaxMinTempreture || recentDaysMaxMinTempreture
-            recentDaysWeatherDescriptionIcon = cityData.weeklyForecast.recentDaysWeatherDescriptionIcon || recentDaysWeatherDescriptionIcon
-        } else if (cityData) {
-            currentCityName = cityData.cityName || "暂无城市"
+    // 重写数据更新函数
+    function updateCityData(data) {
+        weatherData = data
+        if (data) {
+            setLoading(false)
+            setError("")
         }
     }
     
-    // 组件初始化时的处理
-    Component.onCompleted: {
-        console.log("TemperatureTrendView 已加载，包含", recentDaysName.length, "天的数据");
+    // 视图激活时的处理
+    function onViewActivated() {
+        console.log("Temperature Trend View activated")
+        if (viewModel) {
+            viewModel.loadWeatherData()
+        }
     }
     
-    // 使用TempratureTrendItem组件
-    TempratureTrendItem {
-        anchors.fill: parent
-        anchors.margins: 20
-        
-        // 传递数据给组件
-        recentDaysName: temperatureTrendView.recentDaysName
-        recentDaysMaxMinTempreture: temperatureTrendView.recentDaysMaxMinTempreture
-        recentDaysWeatherDescriptionIcon: temperatureTrendView.recentDaysWeatherDescriptionIcon
-        currentCityName: temperatureTrendView.currentCityName
-    }
-    
-    // 拖拽区域
-    DragArea {
-        anchors.fill: parent
+    // 视图失活时的处理
+    function onViewDeactivated() {
+        console.log("Temperature Trend View deactivated")
     }
 }

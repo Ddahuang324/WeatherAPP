@@ -16,11 +16,13 @@ Rectangle {
     property string weatherDescription : "晴"
     property string maxMinTempreture : "25°C / 20°C"
 
-    //城市名称布局
+    //主要内容区域 - 参考温度趋势布局
     Column{
         width: parent.width - 40
         height: parent.height - 40
-        anchors.centerIn: parent
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.topMargin: 20
         spacing: 20
 
         //复用组件：城市名称
@@ -33,16 +35,6 @@ Rectangle {
             anchors.top: undefined
         }
 
-        //今日天气文字
-        Text{
-            id : todayWeatherText
-            text : "今日天气"
-            font.pixelSize : 50
-            font.bold : true
-            color : "white"
-            anchors.horizontalCenter : parent.horizontalCenter
-
-        }
         //当前温度
         Text{
             id:currentTempretureText
@@ -52,6 +44,7 @@ Rectangle {
             color: Qt.rgba(1, 1, 1, 0.8)
             anchors.horizontalCenter: parent.horizontalCenter
         }
+        
         //当前最高/最低气温
         Text{
             id: maxMinTempretureText
@@ -61,10 +54,12 @@ Rectangle {
             color : "white"
             anchors.horizontalCenter : parent.horizontalCenter
         }
+        
         //天气状况
         Row{
             id: weatherDescriptionRow
             anchors.horizontalCenter : parent.horizontalCenter
+            spacing: 10
             //Icon
             Text{
                 text : todayWeatherItem.weatherDescriptionIcon

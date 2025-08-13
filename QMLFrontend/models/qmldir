@@ -1,0 +1,3 @@
+module models
+AppStateManager 1.0 AppStateManager.qml
+WeatherDataModel 1.0 WeatherDataModel.qml

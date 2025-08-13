@@ -1,266 +1,206 @@
-// RecentCitiesManager.qml - 最近城市数据管理器
+// RecentCitiesManager.qml - 最近城市UI管理器（重构后）
 import QtQuick
+import "../../animations"
 
-QtObject {
+Rectangle {
     id: citiesManager
+    width: parent.width
+    height: 60
+    color: "transparent"
     
-    // 数据属性
-    property var recentCities: []
+    // 视图模型依赖
+    property var weatherViewModel: null
+    property var navigationViewModel: null
+    
+    // UI状态属性
     property int currentIndex: 0
-    property int maxCities: 3
-    property string currentViewMode: "today_weather"
     
     // 信号
-    signal citiesChanged()
-    signal currentCityChanged(var cityData)
+    signal cityChanged(string cityName)
     signal indexChanged(int newIndex)
-    signal viewModeChanged(string viewMode)
+    signal currentCityChanged(var cityData)
     
-    // 获取当前城市数据
-    function getCurrentCity() {
-        if (recentCities.length > 0 && currentIndex < recentCities.length) {
-            return recentCities[currentIndex];
-        }
-        return {
-            cityName: "暂无城市",
-            temperature: "--°C",
-            weatherIcon: "🌤️",
-            weatherDescription: "未知",
-            maxMinTemp: "--°C / --°C"
-        };
+    // 监听currentIndex变化
+    onCurrentIndexChanged: {
+        indexChanged(currentIndex)
     }
     
-    // 添加新城市到最近访问列表
-    function addRecentCity(cityData) {
-        if (!cityData || !cityData.cityName) {
-            console.warn("Invalid city data provided");
-            return;
+    // 背景样式
+    GlassEffect {
+        anchors.fill: parent
+        opacity: 0.3
+        cornerRadius: 15
+    }
+    
+    // 主要内容区域
+    Row {
+        anchors.fill: parent
+        anchors.margins: 10
+        spacing: 15
+        
+        // 城市显示卡片
+        CityDisplayCard {
+            id: cityCard
+            width: parent.width - 100
+            height: parent.height
+            
+            cityName: weatherViewModel && weatherViewModel.currentCityData ? 
+                     weatherViewModel.currentCityData.cityName : ""
+            temperature: weatherViewModel && weatherViewModel.currentCityData ? 
+                        weatherViewModel.currentCityData.temperature : "--°C"
+            weatherIcon: weatherViewModel && weatherViewModel.currentCityData ? 
+                        weatherViewModel.currentCityData.weatherIcon : ""
+            weatherDescription: weatherViewModel && weatherViewModel.currentCityData ? 
+                               weatherViewModel.currentCityData.weatherDescription : "未知"
+            maxMinTemp: weatherViewModel && weatherViewModel.currentCityData ? 
+                       weatherViewModel.currentCityData.maxMinTemp : "--°C / --°C"
         }
         
-        // 检查是否已存在
-        var existingIndex = -1;
-        for (var i = 0; i < recentCities.length; i++) {
-            if (recentCities[i].cityName === cityData.cityName) {
-                existingIndex = i;
-                break;
+        // 分页指示器和导航
+        Column {
+            width: 80
+            height: parent.height
+            spacing: 10
+            
+            // 分页指示器
+            PageIndicator {
+                id: pageIndicator
+                anchors.horizontalCenter: parent.horizontalCenter
+                totalPages: weatherViewModel ? weatherViewModel.getRecentCities().length : 0
+                currentPage: currentIndex
+                
+                onPageClicked: function(pageIndex) {
+                    if (weatherViewModel && pageIndex < weatherViewModel.getRecentCities().length) {
+                        currentIndex = pageIndex
+                        var cityName = weatherViewModel.getRecentCities()[pageIndex].name
+                        weatherViewModel.switchToCity(pageIndex)
+                        cityChanged(cityName)
+                    }
+                }
+            }
+            
+            // 导航按钮
+            Row {
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: 10
+                
+                // 上一个城市按钮
+                Rectangle {
+                    width: 30
+                    height: 30
+                    radius: 15
+                    color: "#4A90E2"
+                    visible: weatherViewModel && weatherViewModel.getRecentCities() && weatherViewModel.getRecentCities().length > 1
+                    
+                    Text {
+                        anchors.centerIn: parent
+                        text: "‹"
+                        color: "white"
+                        font.pixelSize: 16
+                        font.weight: Font.Bold
+                    }
+                    
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            if (weatherViewModel && weatherViewModel.recentCities.length > 0) {
+                                var newIndex = (currentIndex - 1 + weatherViewModel.recentCities.length) % weatherViewModel.recentCities.length
+                                currentIndex = newIndex
+                                var cityName = weatherViewModel.recentCities[newIndex].name
+                                weatherViewModel.switchToCity(cityName)
+                                cityChanged(cityName)
+                            }
+                        }
+                    }
+                }
+                
+                // 下一个城市按钮
+                Rectangle {
+                    width: 30
+                    height: 30
+                    radius: 15
+                    color: "#4A90E2"
+                    visible: weatherViewModel && weatherViewModel.recentCities && weatherViewModel.recentCities.length > 1
+                    
+                    Text {
+                        anchors.centerIn: parent
+                        text: "›"
+                        color: "white"
+                        font.pixelSize: 16
+                        font.weight: Font.Bold
+                    }
+                    
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            if (weatherViewModel && weatherViewModel.getRecentCities().length > 0) {
+                                var newIndex = (currentIndex + 1) % weatherViewModel.getRecentCities().length
+                                currentIndex = newIndex
+                                var cityName = weatherViewModel.getRecentCities()[newIndex].name
+                                weatherViewModel.switchToCity(newIndex)
+                                cityChanged(cityName)
+                            }
+                        }
+                    }
+                }
             }
         }
-        
-        // 创建新的数组副本
-        var newCities = recentCities.slice();
-        
-        if (existingIndex >= 0) {
-            // 如果已存在，移除旧的
-            newCities.splice(existingIndex, 1);
-        }
-        
-        // 添加到最前面
-        newCities.unshift(cityData);
-        
-        // 保持最多maxCities个城市
-        if (newCities.length > maxCities) {
-            newCities = newCities.slice(0, maxCities);
-        }
-        
-        // 更新数据
-        recentCities = newCities;
-        currentIndex = 0;
-        
-        // 发送信号
-        citiesChanged();
-        indexChanged(currentIndex);
-        currentCityChanged(getCurrentCityDataForView());
-        
-        console.log("Added city:", cityData.cityName, "Total cities:", recentCities.length);
     }
     
-    // 切换到指定索引的城市
-    function switchToCity(index) {
-        if (index >= 0 && index < recentCities.length && index !== currentIndex) {
-            currentIndex = index;
-            indexChanged(currentIndex);
-            currentCityChanged(getCurrentCityDataForView());
-            console.log("Switched to city:", getCurrentCity().cityName);
+    // 监听最近城市列表变化
+    Connections {
+        target: weatherViewModel
+        function onRecentCitiesChanged() {
+            updateCurrentIndex()
         }
     }
     
-    // 切换到下一个城市
+    // 监听当前城市变化
+    Connections {
+        target: weatherViewModel
+        function onCurrentCityChanged() {
+            updateCurrentIndex()
+        }
+    }
+    
+    // 更新当前索引
+    function updateCurrentIndex() {
+        if (!weatherViewModel || !weatherViewModel.currentCityData) return
+        
+        var currentCityName = weatherViewModel.currentCityData.cityName
+        var recentCities = weatherViewModel.getRecentCities()
+        for (var i = 0; i < recentCities.length; i++) {
+            if (recentCities[i].name === currentCityName) {
+                currentIndex = i
+                break
+            }
+        }
+    }
+    
+    // 切换到下一个城市（键盘导航支持）
     function switchToNext() {
-        if (recentCities.length > 0) {
-            var newIndex = (currentIndex + 1) % recentCities.length;
-            switchToCity(newIndex);
+        if (weatherViewModel && weatherViewModel.getRecentCities().length > 0) {
+            var newIndex = (currentIndex + 1) % weatherViewModel.getRecentCities().length
+            currentIndex = newIndex
+            var cityName = weatherViewModel.getRecentCities()[newIndex].name
+            weatherViewModel.switchToCity(newIndex)
+            cityChanged(cityName)
         }
     }
     
-    // 切换到上一个城市
+    // 切换到上一个城市（键盘导航支持）
     function switchToPrevious() {
-        if (recentCities.length > 0) {
-            var newIndex = (currentIndex - 1 + recentCities.length) % recentCities.length;
-            switchToCity(newIndex);
+        if (weatherViewModel && weatherViewModel.getRecentCities().length > 0) {
+            var newIndex = (currentIndex - 1 + weatherViewModel.getRecentCities().length) % weatherViewModel.getRecentCities().length
+            currentIndex = newIndex
+            var cityName = weatherViewModel.getRecentCities()[newIndex].name
+            weatherViewModel.switchToCity(newIndex)
+            cityChanged(cityName)
         }
     }
     
-    // 获取城市数量
-    function getCityCount() {
-        return recentCities.length;
-    }
-    
-    // 检查是否有城市数据
-    function hasCities() {
-        return recentCities.length > 0;
-    }
-    
-    // 获取指定索引的城市
-    function getCityAt(index) {
-        if (index >= 0 && index < recentCities.length) {
-            return recentCities[index];
-        }
-        return null;
-    }
-    
-    // 清空所有城市
-    function clearCities() {
-        recentCities = [];
-        currentIndex = 0;
-        citiesChanged();
-            indexChanged(currentIndex);
-            currentCityChanged(getCurrentCityDataForView());
-    }
-    
-    // 移除指定城市
-    function removeCity(cityName) {
-        var newCities = [];
-        var removedIndex = -1;
-        
-        for (var i = 0; i < recentCities.length; i++) {
-            if (recentCities[i].cityName !== cityName) {
-                newCities.push(recentCities[i]);
-            } else {
-                removedIndex = i;
-            }
-        }
-        
-        if (removedIndex >= 0) {
-            recentCities = newCities;
-            
-            // 调整当前索引
-            if (currentIndex >= recentCities.length) {
-                currentIndex = Math.max(0, recentCities.length - 1);
-            } else if (removedIndex < currentIndex) {
-                currentIndex = Math.max(0, currentIndex - 1);
-            }
-            
-            citiesChanged();
-            indexChanged(currentIndex);
-            currentCityChanged(getCurrentCityDataForView());
-        }
-    }
-    
-    // 设置视图模式
-    function setViewMode(viewMode) {
-        if (currentViewMode !== viewMode) {
-            currentViewMode = viewMode;
-            viewModeChanged(viewMode);
-            // 重新发送当前城市数据以适应新的视图模式
-            currentCityChanged(getCurrentCityDataForView());
-        }
-    }
-    
-    // 获取当前视图模式下的城市数据
-    function getCurrentCityDataForView() {
-        var baseData = getCurrentCity();
-        
-        switch(currentViewMode) {
-            case "today_weather":
-                var todayData = JSON.parse(JSON.stringify(baseData));
-                todayData.viewMode = "today_weather";
-                return todayData;
-            case "temperature_trend":
-                var trendData = JSON.parse(JSON.stringify(baseData));
-                trendData.viewMode = "temperature_trend";
-                trendData.weeklyForecast = getWeeklyForecast(baseData.cityName);
-                return trendData;
-            case "detailed_info":
-                var detailData = JSON.parse(JSON.stringify(baseData));
-                detailData.viewMode = "detailed_info";
-                detailData.detailedInfo = getDetailedInfo(baseData.cityName);
-                return detailData;
-            case "sunrise_sunset":
-                var sunriseData = JSON.parse(JSON.stringify(baseData));
-                sunriseData.viewMode = "sunrise_sunset";
-                sunriseData.sunriseInfo = getSunriseInfo(baseData.cityName);
-                return sunriseData;
-            default:
-                return baseData;
-        }
-    }
-    
-    // 获取周天气预报数据
-    function getWeeklyForecast(cityName) {
-        // 模拟数据，实际应该从后端获取
-        return {
-            recentDaysName: ["今天", "明天", "后天", "周四", "周五", "周六", "周日"],
-            recentDaysMaxMinTempreture: [
-                "22°C / 12°C", "25°C / 15°C", "20°C / 10°C",
-                "18°C / 8°C", "23°C / 13°C", "26°C / 16°C", "24°C / 14°C"
-            ],
-            recentDaysWeatherDescriptionIcon: ["☀️", "⛅", "🌧️", "☀️", "🌤️", "☀️", "⛅"]
-        };
-    }
-    
-    // 获取详细信息数据
-    function getDetailedInfo(cityName) {
-        // 模拟数据，实际应该从后端获取
-        return {
-            humidity: "65%",
-            windSpeed: "12km/h",
-            rainfall: "0mm",
-            airQuality: "良好",
-            airPressure: "1013hPa",
-            uvIndex: "5"
-        };
-    }
-    
-    // 获取日出日落信息
-    function getSunriseInfo(cityName) {
-        // 模拟数据，实际应该从后端获取
-        return {
-            sunrise: "06:30",
-            sunset: "18:45",
-            dayLength: "12小时15分钟"
-        };
-    }
-    
-    // 初始化示例数据（可选）
-    function initializeWithSampleData() {
-        var sampleCities = [
-            {
-                cityName: "北京",
-                temperature: "25°C",
-                weatherIcon: "☀️",
-                weatherDescription: "晴",
-                maxMinTemp: "28°C / 18°C"
-            },
-            {
-                cityName: "上海",
-                temperature: "22°C",
-                weatherIcon: "🌤️",
-                weatherDescription: "多云",
-                maxMinTemp: "25°C / 19°C"
-            },
-            {
-                cityName: "广州",
-                temperature: "28°C",
-                weatherIcon: "🌦️",
-                weatherDescription: "小雨",
-                maxMinTemp: "30°C / 24°C"
-            }
-        ];
-        
-        recentCities = sampleCities;
-        currentIndex = 0;
-        citiesChanged();
-        indexChanged(currentIndex);
-        currentCityChanged(getCurrentCityDataForView());
+    // 初始化
+    Component.onCompleted: {
+        updateCurrentIndex()
     }
 }
