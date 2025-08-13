@@ -41,6 +41,10 @@ qt_add_qml_module(appWeatherAPP
         QMLFrontend/components/DetailedInfo/DetailedInfoItem.qml
         QMLFrontend/components/DetailedInfo/DetailedInfoLabel.qml
         QMLFrontend/components/DetailedInfo/qmldir
+        QMLFrontend/components/RecentCityPager/PageIndicator.qml
+        QMLFrontend/components/RecentCityPager/CityDisplayCard.qml
+        QMLFrontend/components/RecentCityPager/RecentCitiesManager.qml
+        QMLFrontend/components/RecentCityPager/qmldir
         QMLFrontend/components/qmldir
         QMLFrontend/views/TodayWeatherView.qml
         QMLFrontend/views/TemperatureTrendView.qml

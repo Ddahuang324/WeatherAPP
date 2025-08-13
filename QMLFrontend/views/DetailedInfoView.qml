@@ -6,7 +6,7 @@ Rectangle {
     id: detailedInfoView
     color: "transparent"
     
-    // 模拟后端数据
+    // 数据属性
     property var weatherData: {
         "cityName": "北京",
         "humidity": "65%",
@@ -15,6 +15,23 @@ Rectangle {
         "airQuality": "良好",
         "airPressure": "1013hPa",
         "uvIndex": "5"
+    }
+    
+    // 添加数据更新函数
+    function updateCityData(cityData) {
+        if (cityData && cityData.detailedInfo) {
+            weatherData = {
+                "cityName": cityData.cityName || "暂无城市",
+                "humidity": cityData.detailedInfo.humidity || "--",
+                "windSpeed": cityData.detailedInfo.windSpeed || "--",
+                "rainfall": cityData.detailedInfo.rainfall || "--",
+                "airQuality": cityData.detailedInfo.airQuality || "--",
+                "airPressure": cityData.detailedInfo.airPressure || "--",
+                "uvIndex": cityData.detailedInfo.uvIndex || "--"
+            }
+        } else if (cityData) {
+            weatherData.cityName = cityData.cityName || "暂无城市"
+        }
     }
     
     // 详细信息视图内容

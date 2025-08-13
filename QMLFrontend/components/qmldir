@@ -7,6 +7,11 @@ DragArea 1.0 common/DragArea.qml
 CityNameLabel 1.0 common/CityNameLabel.qml
 SunsetSunriseitem 1.0 common/SunsetSunriseitem.qml
 
+# Recent City Pager components
+PageIndicator 1.0 RecentCityPager/PageIndicator.qml
+CityDisplayCard 1.0 RecentCityPager/CityDisplayCard.qml
+RecentCitiesManager 1.0 RecentCityPager/RecentCitiesManager.qml
+
 # Navigation components
 MenuItem 1.0 navigation/MenuItem.qml
 NavigationMenu 1.0 navigation/NavigationMenu.qml

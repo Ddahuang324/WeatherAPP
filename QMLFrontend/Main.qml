@@ -34,6 +34,8 @@ Window {
             // 连接视图切换信号
             onViewChangeRequested: function(viewName) {
                 contentArea.switchView(viewName)
+                // 同步视图模式到分页器
+                recentCitiesPager.citiesManager.setViewMode(viewName)
             }
         }
         
@@ -57,6 +59,11 @@ Window {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 90
                 backgroundSource: backgroundItem
+                
+                // 连接城市数据变化到ContentArea
+                onCityChanged: function(cityData) {
+                    contentArea.updateCityData(cityData)
+                }
             }
         }
     }

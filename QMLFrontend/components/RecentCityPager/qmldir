@@ -1,0 +1,5 @@
+module RecentCityPager
+
+PageIndicator 1.0 PageIndicator.qml
+CityDisplayCard 1.0 CityDisplayCard.qml
+RecentCitiesManager 1.0 RecentCitiesManager.qml

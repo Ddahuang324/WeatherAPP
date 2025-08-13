@@ -11,6 +11,10 @@ Rectangle {
     
     // 背景源属性
     property Item backgroundSource: null
+    
+    // 数据接收属性
+    property var currentCityData: null
+    property string currentViewMode: "today_weather"
 
     // 内容区域样式
     ContentAreaStyle {
@@ -31,8 +35,18 @@ Rectangle {
         anchors.fill: parent
     }
     
+    // 数据更新函数
+    function updateCityData(cityData) {
+        currentCityData = cityData
+        // 通知当前视图更新数据
+        if (viewLoader.item && viewLoader.item.updateCityData) {
+            viewLoader.item.updateCityData(cityData)
+        }
+    }
+    
     // 视图切换函数
     function switchView(viewName) {
+        currentViewMode = viewName
         if (viewName === "today_weather") {
             viewLoader.source = "../views/TodayWeatherView.qml"
         } else if (viewName === "temperature_trend") {
@@ -42,5 +56,12 @@ Rectangle {
         } else if (viewName === "sunrise_sunset") {
             viewLoader.source = "../views/SunriseSunsetView.qml"
         }
+        
+        // 视图加载完成后立即更新数据
+        viewLoader.onLoaded.connect(function() {
+            if (currentCityData && viewLoader.item && viewLoader.item.updateCityData) {
+                viewLoader.item.updateCityData(currentCityData)
+            }
+        })
     }
 }

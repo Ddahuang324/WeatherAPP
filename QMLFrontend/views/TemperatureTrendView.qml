@@ -7,7 +7,7 @@ Rectangle {
     id: temperatureTrendView
     color: "transparent"
     
-    // 简单的模拟数据
+    // 数据属性
     property var recentDaysName: [
         "今天", "明天", "后天", "周四", "周五", "周六", "周日"
     ]
@@ -27,6 +27,18 @@ Rectangle {
     ]
     
     property string currentCityName: "北京"
+    
+    // 添加数据更新函数
+    function updateCityData(cityData) {
+        if (cityData && cityData.weeklyForecast) {
+            currentCityName = cityData.cityName || "暂无城市"
+            recentDaysName = cityData.weeklyForecast.recentDaysName || recentDaysName
+            recentDaysMaxMinTempreture = cityData.weeklyForecast.recentDaysMaxMinTempreture || recentDaysMaxMinTempreture
+            recentDaysWeatherDescriptionIcon = cityData.weeklyForecast.recentDaysWeatherDescriptionIcon || recentDaysWeatherDescriptionIcon
+        } else if (cityData) {
+            currentCityName = cityData.cityName || "暂无城市"
+        }
+    }
     
     // 组件初始化时的处理
     Component.onCompleted: {
