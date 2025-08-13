@@ -1,0 +1,8 @@
+module animations
+
+GlassEffect 1.0 GlassEffect.qml
+EdgeBlurEffect 1.0 EdgeBlurEffect.qml
+GradientBackground 1.0 GradientBackground.qml
+SidebarStyle 1.0 SidebarStyle.qml
+RecentCitiesPagerStyle 1.0 RecentCitiesPagerStyle.qml
+ContentAreaStyle 1.0 ContentAreaStyle.qml

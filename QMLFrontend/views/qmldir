@@ -1,0 +1,6 @@
+module views
+
+TodayWeatherView 1.0 TodayWeatherView.qml
+TemperatureTrendView 1.0 TemperatureTrendView.qml
+DetailedInfoView 1.0 DetailedInfoView.qml
+SunriseSunsetView 1.0 SunriseSunsetView.qml

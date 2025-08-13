@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天气预报 - 桌面版</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons for minimalist icons -->
+    <script src="https://unpkg.com/lucide-react@0.292.0/dist/umd/lucide.min.js"></script>
+
+    <style>
+        /* Applying the Inter font family */
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; /* Prevent scrolling on the body */
+        }
+        /* Custom class for the glassmorphism effect */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px); /* For Safari */
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 1.5rem; /* 24px */
+        }
+        /* Styling for the temperature chart line */
+        .chart-line {
+            stroke-width: 3;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        /* Styling for the dots on the chart */
+        .chart-dot {
+            stroke-width: 2;
+            stroke: white;
+        }
+        /* Glow effect for the main temperature */
+        .temp-glow {
+            text-shadow: 0 0 25px rgba(255, 255, 255, 0.3);
+        }
+        /* Custom style for search input */
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+    </style>
+</head>
+<body class="bg-slate-900">
+
+    <!-- Main container with a dynamic gradient background -->
+    <div class="h-screen w-full bg-gradient-to-br from-cyan-400 via-sky-500 to-indigo-600 p-8 flex items-center justify-center">
+        
+        <!-- Desktop-sized container with a two-column layout on larger screens -->
+        <main class="w-full max-w-6xl mx-auto text-white lg:grid lg:grid-cols-5 lg:gap-12">
+
+            <!-- ================================================== -->
+            <!-- Left Column: Current Weather Details (col-span-2)  -->
+            <!-- ================================================== -->
+            <div class="lg:col-span-2 flex flex-col justify-between h-full mb-8 lg:mb-0">
+                <!-- 1. Top Section: Core Info -->
+                <div class="text-left flex flex-col items-start">
+                    <h1 class="text-3xl font-bold tracking-wide text-white">上海市, 浦东新区</h1>
+                    <p id="current-date" class="text-lg font-medium text-white/80">正在加载日期...</p>
+                    <p class="text-9xl font-bold tracking-tighter pt-8 temp-glow">28°</p>
+                    <div class="flex items-center space-x-3 mt-2">
+                        <span class="font-medium text-white/90 text-xl">多云转晴</span>
+                        <span class="bg-green-500/80 text-white text-sm font-bold px-3 py-1 rounded-full">优 50</span>
+                    </div>
+                </div>
+
+                <!-- 2. Detailed Info - Vertical Stack -->
+                <div class="space-y-4">
+                    <!-- Sunrise & Sunset -->
+                    <div class="glass-card p-4 flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <i data-lucide="sunrise" class="w-8 h-8 text-white/80"></i>
+                            <p class="font-semibold">日出</p>
+                        </div>
+                        <p class="font-bold text-lg">05:30</p>
+                    </div>
+                     <!-- Humidity -->
+                    <div class="glass-card p-4 flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <i data-lucide="droplets" class="w-8 h-8 text-white/80"></i>
+                            <p class="font-semibold">湿度</p>
+                        </div>
+                        <p class="font-bold text-lg">75%</p>
+                    </div>
+                    <!-- Wind & Direction -->
+                    <div class="glass-card p-4 flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <i data-lucide="wind" class="w-8 h-8 text-white/80"></i>
+                            <p class="font-semibold">风力</p>
+                        </div>
+                        <p class="font-bold text-lg">东南风, 3级</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================================================== -->
+            <!-- Right Column: Forecasts (col-span-3)             -->
+            <!-- ================================================== -->
+            <div class="lg:col-span-3 flex flex-col space-y-6">
+                <!-- NEW: Search UI -->
+                <div class="glass-card flex items-center p-2 space-x-2">
+                    <input type="text" placeholder="搜索城市..." class="search-input w-full bg-transparent text-white text-lg p-3 focus:outline-none">
+                    <button class="bg-white/20 hover:bg-white/30 transition-colors rounded-full p-3">
+                        <i data-lucide="search" class="w-6 h-6 text-white"></i>
+                    </button>
+                </div>
+
+                <!-- 3. 5-Day Temperature Chart -->
+                <div class="glass-card p-6">
+                    <h3 class="font-semibold text-white/90 mb-4">五日温度趋势</h3>
+                    <svg viewBox="0 0 300 100" class="w-full h-auto">
+                        <text x="25" y="95" font-size="12" fill="white" text-anchor="middle">28°</text>
+                        <text x="85" y="95" font-size="12" fill="white" text-anchor="middle">30°</text>
+                        <text x="145" y="95" font-size="12" fill="white" text-anchor="middle">29°</text>
+                        <text x="205" y="95" font-size="12" fill="white" text-anchor="middle">27°</text>
+                        <text x="265" y="95" font-size="12" fill="white" text-anchor="middle">26°</text>
+                        <polyline class="chart-line" stroke="#FFD700" points="25,40 85,20 145,30 205,50 265,60" />
+                        <circle class="chart-dot" fill="#FFD700" cx="25" cy="40" r="4"></circle>
+                        <circle class="chart-dot" fill="#FFD700" cx="85" cy="20" r="4"></circle>
+                        <circle class="chart-dot" fill="#FFD700" cx="145" cy="30" r="4"></circle>
+                        <circle class="chart-dot" fill="#FFD700" cx="205" cy="50" r="4"></circle>
+                        <circle class="chart-dot" fill="#FFD700" cx="265" cy="60" r="4"></circle>
+                    </svg>
+                </div>
+
+                <!-- 4. Weekly Forecast List -->
+                <div class="glass-card p-6">
+                    <h3 class="font-semibold text-white/90 mb-2">未来一周</h3>
+                    <ul class="divide-y divide-white/20">
+                        <li class="flex items-center justify-between py-3">
+                            <span class="font-medium w-1/4">周三</span>
+                            <i data-lucide="cloud-sun" class="w-6 h-6 text-white"></i>
+                            <span class="w-1/4 flex items-center space-x-1.5 pl-4">
+                                <span class="w-2 h-2 bg-green-400 rounded-full"></span>
+                                <span class="text-sm text-white/80">优</span>
+                            </span>
+                            <span class="font-medium w-1/4 text-right">29° / 21°</span>
+                        </li>
+                        <li class="flex items-center justify-between py-3">
+                            <span class="font-medium w-1/4">周四</span>
+                            <i data-lucide="cloud-drizzle" class="w-6 h-6 text-white"></i>
+                            <span class="w-1/4 flex items-center space-x-1.5 pl-4">
+                                <span class="w-2 h-2 bg-green-400 rounded-full"></span>
+                                <span class="text-sm text-white/80">优</span>
+                            </span>
+                            <span class="font-medium w-1/4 text-right">27° / 20°</span>
+                        </li>
+                        <li class="flex items-center justify-between py-3">
+                            <span class="font-medium w-1/4">周五</span>
+                            <i data-lucide="cloud-lightning" class="w-6 h-6 text-white"></i>
+                            <span class="w-1/4 flex items-center space-x-1.5 pl-4">
+                                <span class="w-2 h-2 bg-yellow-400 rounded-full"></span>
+                                <span class="text-sm text-white/80">良</span>
+                            </span>
+                            <span class="font-medium w-1/4 text-right">28° / 22°</span>
+                        </li>
+                         <li class="flex items-center justify-between py-3">
+                            <span class="font-medium w-1/4">周六</span>
+                            <i data-lucide="sun" class="w-6 h-6 text-white"></i>
+                            <span class="w-1/4 flex items-center space-x-1.5 pl-4">
+                                <span class="w-2 h-2 bg-green-400 rounded-full"></span>
+                                <span class="text-sm text-white/80">优</span>
+                            </span>
+                            <span class="font-medium w-1/4 text-right">31° / 23°</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Render Lucide icons
+        lucide.createIcons();
+
+        // Function to get and format the current date in Chinese
+        function setDate() {
+            const dateElement = document.getElementById('current-date');
+            if (!dateElement) return;
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = today.getMonth() + 1;
+            const day = today.getDate();
+            const weekday = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][today.getDay()];
+            
+            dateElement.innerText = `${year}年${month}月${day}日, ${weekday}`;
+        }
+
+        // Set the date when the page loads
+        document.addEventListener('DOMContentLoaded', setDate);
+    </script>
+
+</body>
+</html>
