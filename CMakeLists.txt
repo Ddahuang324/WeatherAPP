@@ -31,6 +31,7 @@ qt_add_qml_module(appWeatherAPP
         QMLFrontend/components/common/SearchBar.qml
         QMLFrontend/components/common/DragArea.qml
         QMLFrontend/components/common/CityNameLabel.qml
+        QMLFrontend/components/common/SunsetSunriseitem.qml
         QMLFrontend/components/navigation/MenuItem.qml
         QMLFrontend/components/navigation/NavigationMenu.qml
         QMLFrontend/components/TodaysWeather/TodaysWeatherItem.qml

@@ -5,6 +5,7 @@ WindowControls 1.0 common/WindowControls.qml
 SearchBar 1.0 common/SearchBar.qml
 DragArea 1.0 common/DragArea.qml
 CityNameLabel 1.0 common/CityNameLabel.qml
+SunsetSunriseitem 1.0 common/SunsetSunriseitem.qml
 
 # Navigation components
 MenuItem 1.0 navigation/MenuItem.qml
