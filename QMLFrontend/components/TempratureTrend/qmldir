@@ -1,0 +1,5 @@
+module TempratureTrend
+
+TempratureTrendItem 1.0 TempratureTrendItem.qml
+TempratureTrendItemDelegate 1.0 TempratureTrendItemDelegate.qml
+TemperatureChart 1.0 TemperatureChart.qml

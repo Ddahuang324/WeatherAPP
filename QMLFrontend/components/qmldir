@@ -1,0 +1,28 @@
+module components
+
+# Common components
+WindowControls 1.0 common/WindowControls.qml
+SearchBar 1.0 common/SearchBar.qml
+DragArea 1.0 common/DragArea.qml
+CityNameLabel 1.0 common/CityNameLabel.qml
+SunsetSunriseitem 1.0 common/SunsetSunriseitem.qml
+
+# Recent City Pager components
+PageIndicator 1.0 RecentCityPager/PageIndicator.qml
+CityDisplayCard 1.0 RecentCityPager/CityDisplayCard.qml
+RecentCitiesManager 1.0 RecentCityPager/RecentCitiesManager.qml
+
+# Navigation components
+MenuItem 1.0 navigation/MenuItem.qml
+NavigationMenu 1.0 navigation/NavigationMenu.qml
+
+# Today's Weather components
+TodaysWeatherItem 1.0 TodaysWeather/TodaysWeatherItem.qml
+
+# Temperature Trend components
+TempratureTrendItem 1.0 TempratureTrend/TempratureTrendItem.qml
+TempratureTrendItemDelegate 1.0 TempratureTrend/TempratureTrendItemDelegate.qml
+
+# Detailed Info components
+DetailedInfoLabel 1.0 DetailedInfo/DetailedInfoLabel.qml
+DetailedInfoItem 1.0 DetailedInfo/DetailedInfoItem.qml

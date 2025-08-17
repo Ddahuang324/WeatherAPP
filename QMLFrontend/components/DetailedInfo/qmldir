@@ -1,0 +1,4 @@
+module DetailedInfo
+
+DetailedInfoItem 1.0 DetailedInfoItem.qml
+DetailedInfoLabel 1.0 DetailedInfoLabel.qml
