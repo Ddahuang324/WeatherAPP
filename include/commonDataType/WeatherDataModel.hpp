@@ -20,6 +20,8 @@ class WeatherDataModel : public QObject {
     Q_PROPERTY(QVariantMap weeklyForecast READ weeklyForecast WRITE setWeeklyForecast NOTIFY weeklyForecastChanged)
     Q_PROPERTY(QVariantMap detailedInfo READ detailedInfo WRITE setDetailedInfo NOTIFY detailedInfoChanged)
     Q_PROPERTY(QVariantMap sunriseInfo READ sunriseInfo WRITE setSunriseInfo NOTIFY sunriseInfoChanged)
+    Q_PROPERTY(QString ganmao READ ganmao WRITE setGanmao NOTIFY ganmaoChanged)
+    Q_PROPERTY(QString notice READ notice WRITE setNotice NOTIFY noticeChanged)
 
 public:
     // 构造函数，初始化 WeatherDataModel 对象
@@ -43,6 +45,10 @@ public:
     QVariantMap detailedInfo() const { return m_detailedInfo; }
     // 获取日出信息
     QVariantMap sunriseInfo() const { return m_sunriseInfo; }
+    // 获取感冒指数
+    QString ganmao() const { return m_ganmao; }
+    // 获取注意事项
+    QString notice() const { return m_notice; }
 
 //Setter
     // 设置城市名称
@@ -61,6 +67,10 @@ public:
     void setDetailedInfo(const QVariantMap &detailedInfo);
     // 设置日出信息
     void setSunriseInfo(const QVariantMap &sunriseInfo);
+    // 设置感冒指数
+    void setGanmao(const QString &ganmao);
+    // 设置注意事项
+    void setNotice(const QString &notice);
 
 //Static Factory Method 
 
@@ -90,6 +100,8 @@ signals:
     void weeklyForecastChanged();
     void detailedInfoChanged();
     void sunriseInfoChanged();
+    void ganmaoChanged();
+    void noticeChanged();
 
 private:
     QString m_cityName;
@@ -100,6 +112,8 @@ private:
     QVariantMap m_weeklyForecast;
     QVariantMap m_detailedInfo;
     QVariantMap m_sunriseInfo;
+    QString m_ganmao;
+    QString m_notice;
 };
 
 #endif // WEATHERDATAMODEL_HPP

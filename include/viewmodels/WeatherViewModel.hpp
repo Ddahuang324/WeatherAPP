@@ -39,6 +39,8 @@ public:
         Q_INVOKABLE void initialize(QObject *stateManager);
         // 加载指定城市的天气信息
         Q_INVOKABLE void loadCityWeather(const QString &cityName);
+        // 加载当前城市的天气数据（包括周预报）
+        Q_INVOKABLE void loadWeatherData();
         // 根据查询字符串搜索城市，并在找到结果时调用回调函数
         Q_INVOKABLE void searchCities(const QString &query, const QJSValue &callback = QJSValue());
         // 将城市数据添加到最近访问的城市列表中

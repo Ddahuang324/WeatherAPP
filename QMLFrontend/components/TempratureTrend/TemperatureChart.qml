@@ -41,23 +41,49 @@ Rectangle {
         var minTemps = [];
         var labels = [];
         
+        console.log("TemperatureChart: 开始解析温度数据，共", temperatureStrings.length, "条记录");
+        
         for (var i = 0; i < temperatureStrings.length; i++) {
             var tempStr = temperatureStrings[i];
+            console.log("TemperatureChart: 解析第", i, "条数据:", tempStr);
+            
             if (tempStr && typeof tempStr === 'string' && tempStr.includes(" / ")) {
                 var temps = tempStr.split(" / ");
                 if (temps.length >= 2) {
-                    var highTemp = parseInt(temps[0].replace("°C", "").trim());
-                    var lowTemp = parseInt(temps[1].replace("°C", "").trim());
+                    var highTempStr = temps[0].trim();
+                    var lowTempStr = temps[1].trim();
+                    
+                    // 支持多种温度格式："高温 30℃"、"30°C"、"30℃"
+                    var highTemp, lowTemp;
+                    
+                    // 解析高温
+                    if (highTempStr.includes("高温")) {
+                        highTemp = parseInt(highTempStr.replace("高温", "").replace("℃", "").replace("°C", "").trim());
+                    } else {
+                        highTemp = parseInt(highTempStr.replace("℃", "").replace("°C", "").trim());
+                    }
+                    
+                    // 解析低温
+                    if (lowTempStr.includes("低温")) {
+                        lowTemp = parseInt(lowTempStr.replace("低温", "").replace("℃", "").replace("°C", "").trim());
+                    } else {
+                        lowTemp = parseInt(lowTempStr.replace("℃", "").replace("°C", "").trim());
+                    }
+                    
+                    console.log("TemperatureChart: 解析结果 - 高温:", highTemp, "低温:", lowTemp);
                     
                     if (!isNaN(highTemp) && !isNaN(lowTemp)) {
                         maxTemps.push(highTemp);
                         minTemps.push(lowTemp);
                         labels.push(dayNames[i] || "Day" + (i + 1));
+                    } else {
+                        console.log("TemperatureChart: 温度解析失败，跳过此条数据");
                     }
                 }
             }
         }
         
+        console.log("TemperatureChart: 最终解析结果 - 最高温度:", maxTemps, "最低温度:", minTemps, "标签:", labels);
         updateChart(maxTemps, minTemps, labels);
     }
     

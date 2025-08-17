@@ -15,6 +15,8 @@ QtObject {
     property var weeklyForecast: null
     property var detailedInfo: null
     property var sunriseInfo: null
+    property string ganmao: ""
+    property string notice: ""
     
     // 数据验证
     function isValid() {
@@ -39,6 +41,8 @@ QtObject {
         model.weeklyForecast = rawData.weeklyForecast || null
         model.detailedInfo = rawData.detailedInfo || null
         model.sunriseInfo = rawData.sunriseInfo || null
+        model.ganmao = rawData.ganmao || ""
+        model.notice = rawData.notice || ""
         
         return model
     }
@@ -70,7 +74,9 @@ QtObject {
             maxMinTemp: maxMinTemp,
             weeklyForecast: weeklyForecast,
             detailedInfo: detailedInfo,
-            sunriseInfo: sunriseInfo
+            sunriseInfo: sunriseInfo,
+            ganmao: ganmao,
+            notice: notice
         }
     }
     
@@ -91,5 +97,7 @@ QtObject {
         if (newData.weeklyForecast !== undefined) weeklyForecast = newData.weeklyForecast
         if (newData.detailedInfo !== undefined) detailedInfo = newData.detailedInfo
         if (newData.sunriseInfo !== undefined) sunriseInfo = newData.sunriseInfo
+        if (newData.ganmao !== undefined) ganmao = newData.ganmao
+        if (newData.notice !== undefined) notice = newData.notice
     }
 }

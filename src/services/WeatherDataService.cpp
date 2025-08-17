@@ -69,15 +69,19 @@ void WeatherDataService::getCityWeather(const QString &cityName,const QJSValue &
         // 构建正确的数据结构
         QVariantMap processedData = data;
         
-        // 构建detailedInfo结构
-        QVariantMap detailedInfo;
-        detailedInfo["humidity"] = data.value("humidity", "--").toString() + "%";
-        detailedInfo["windSpeed"] = QString::number(data.value("windSpeed", 0.0).toDouble()) + "km/h";
-        detailedInfo["rainfall"] = "0mm"; // OpenWeather API当前天气不包含降雨量
-        detailedInfo["airQuality"] = "良好"; // 需要额外的API调用获取空气质量
-        detailedInfo["airPressure"] = data.value("pressure", "--").toString() + "hPa";
-        detailedInfo["uvIndex"] = "--"; // OpenWeather API当前天气不包含UV指数
-        processedData["detailedInfo"] = detailedInfo;
+        // 由于API已经在parseCurrentWeatherData中构建了detailedInfo，这里不需要重复构建
+        // 直接使用API返回的detailedInfo数据
+        if (!data.contains("detailedInfo")) {
+            // 如果API没有返回detailedInfo，则构建一个默认的
+            QVariantMap detailedInfo;
+            detailedInfo["humidity"] = data.value("shidu", "--").toString();
+            detailedInfo["windSpeed"] = data.value("fl", "--").toString();
+            detailedInfo["rainfall"] = "0mm";
+            detailedInfo["airQuality"] = data.value("quality", "--").toString();
+            detailedInfo["airPressure"] = "--hPa";
+            detailedInfo["uvIndex"] = "--";
+            processedData["detailedInfo"] = detailedInfo;
+        }
         
         // 构建sunriseInfo结构
         QVariantMap sunriseInfo;
@@ -133,6 +137,10 @@ void WeatherDataService::getWeeklyForecast(const QString &cityName, const QJSVal
     
     // 使用WeatherAPIClient获取周天气预报
     m_apiClient->getWeeklyForecast(cityName, [this, callback](const QVariantMap &data) {
+        // 发出dataLoaded信号，让AppStateManager能够接收到数据
+        emit dataLoaded(data);
+        
+        // 如果有回调函数，也调用它
         if (callback.isCallable()) {
             QJSValueList args;
             args << qmlEngine(this)->toScriptValue(data);

@@ -13,7 +13,8 @@ BaseView {
     // 详细信息组件
     DetailedInfoItem {
         id: detailItem
-        anchors.centerIn: parent
+        width: parent.width
+        height: parent.height
         
         // 绑定数据
         cityName: detailedInfoView.weatherData ? detailedInfoView.weatherData.cityName : "暂无城市"

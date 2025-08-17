@@ -43,6 +43,33 @@ void WeatherViewModel::loadCityWeather(const QString &cityName){
     m_weatherDataService->getCityWeather(cityName, QJSValue());
 }
 
+void WeatherViewModel::loadWeatherData() {
+    // 获取当前城市数据
+    QVariantMap currentCity = getCurrentCityData();
+    if (currentCity.isEmpty()) {
+        qDebug() << "No current city data available";
+        return;
+    }
+    
+    QString cityName = currentCity.value("cityName", "").toString();
+    if (cityName.isEmpty()) {
+        qDebug() << "Current city name is empty";
+        return;
+    }
+    
+    qDebug() << "WeatherViewModel::loadWeatherData() - Loading weather data for city:" << cityName;
+    setLoading(true);
+    clearError();
+    
+    // 获取当前天气数据
+    qDebug() << "WeatherViewModel::loadWeatherData() - Calling getCityWeather for:" << cityName;
+    m_weatherDataService->getCityWeather(cityName, QJSValue());
+    
+    // 获取周预报数据
+    qDebug() << "WeatherViewModel::loadWeatherData() - Calling getWeeklyForecast for:" << cityName;
+    m_weatherDataService->getWeeklyForecast(cityName, QJSValue());
+}
+
 // WeatherViewModel 类的成员函数，用于根据查询条件搜索城市信息
 void WeatherViewModel::searchCities(const QString &query , const QJSValue &callback){
     if (callback.isCallable()) {

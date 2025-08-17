@@ -15,18 +15,24 @@
 #include <QNetworkReply>
 #include <QHash>
 #include <QRegularExpression>
+#include <QFile>
+#include <QMap>
+#include <QIODevice>
 #include <algorithm>
 #include <functional>
 
 WeatherAPIClient::WeatherAPIClient(QObject *parent)
     : QObject(parent)
     , m_networkManager(new QNetworkAccessManager(this))
-    , m_apiKey("98385aa2f0f513f6868cb258a62a227c") // OpenWeather API密钥
-    , m_baseUrl("https://api.openweathermap.org/data/2.5") // OpenWeather API
+    , m_apiKey("") // 新的API不需要apiKey，所以这里留空
+    , m_baseUrl("http://t.weather.itboy.net/api/weather/city/") // 修改为新的API地址
 {
     // 连接网络请求完成信号
     connect(m_networkManager, &QNetworkAccessManager::finished,
             this, &WeatherAPIClient::onNetworkReplyFinished);
+    
+    // 在构造函数中加载城市代码
+    loadCityCodes();
 }
 
 WeatherAPIClient::~WeatherAPIClient()
@@ -52,35 +58,70 @@ void WeatherAPIClient::setBaseUrl(const QString &baseUrl)
 
 void WeatherAPIClient::getCurrentWeather(const QString &cityName, std::function<void(const QVariantMap&)> callback)
 {
-    if (m_apiKey.isEmpty()) {
-        callback(createErrorResponse("API key not set", cityName));
+    if (!m_cityCodeMap.contains(cityName)) {
+        callback(createErrorResponse("City not found", cityName));
         return;
     }
-    
-    QString url = buildCurrentWeatherUrl(cityName);
+    QString cityCode = m_cityCodeMap.value(cityName);
+    QString url = buildCurrentWeatherUrl(cityCode);
     sendRequest(url, callback);
 }
 
 void WeatherAPIClient::getWeeklyForecast(const QString &cityName, std::function<void(const QVariantMap&)> callback)
 {
-    if (m_apiKey.isEmpty()) {
-        callback(createErrorResponse("API key not set", cityName));
+    if (!m_cityCodeMap.contains(cityName)) {
+        callback(createErrorResponse("City not found", cityName));
         return;
     }
+    QString cityCode = m_cityCodeMap.value(cityName);
+    QString url = buildCurrentWeatherUrl(cityCode);
     
-    QString url = buildForecastUrl(cityName);
-    sendRequest(url, callback);
+    qDebug() << "Getting weekly forecast for city:" << cityName << "with code:" << cityCode;
+    qDebug() << "Weekly forecast URL:" << url;
+    
+    // 创建专门的回调函数来解析周预报数据
+    auto weeklyCallback = [this, callback, cityName](const QVariantMap& rawData) {
+        qDebug() << "Weekly forecast raw data received for" << cityName << ":" << rawData;
+        
+        if (rawData.contains("error")) {
+            qDebug() << "Error in weekly forecast data:" << rawData["error"];
+            callback(rawData);
+            return;
+        }
+        
+        // 从原始数据中提取JSON并使用parseWeeklyForecastData解析
+        QJsonObject json = QJsonObject::fromVariantMap(rawData);
+        QVariantMap result = parseWeeklyForecastData(json);
+        qDebug() << "Parsed weekly forecast result:" << result;
+        callback(result);
+    };
+    
+    sendRequest(url, weeklyCallback);
 }
 
 void WeatherAPIClient::getDailyForecast(const QString &cityName, std::function<void(const QVariantMap&)> callback)
 {
-    if (m_apiKey.isEmpty()) {
-        callback(createErrorResponse("API key not set", cityName));
+    if (!m_cityCodeMap.contains(cityName)) {
+        callback(createErrorResponse("City not found", cityName));
         return;
     }
+    QString cityCode = m_cityCodeMap.value(cityName);
+    QString url = buildCurrentWeatherUrl(cityCode);
     
-    QString url = buildDailyForecastUrl(cityName);
-    sendRequest(url, callback);
+    // 创建专门的回调函数来解析日预报数据
+    auto dailyCallback = [this, callback](const QVariantMap& rawData) {
+        if (rawData.contains("error")) {
+            callback(rawData);
+            return;
+        }
+        
+        // 从原始数据中提取JSON并使用parseDailyForecastData解析
+        QJsonObject json = QJsonObject::fromVariantMap(rawData);
+        QVariantMap result = parseDailyForecastData(json);
+        callback(result);
+    };
+    
+    sendRequest(url, dailyCallback);
 }
 
 void WeatherAPIClient::getDetailedWeatherInfo(const QString &cityName, std::function<void(const QVariantMap&)> callback)
@@ -119,13 +160,20 @@ void WeatherAPIClient::getSunriseInfo(const QString &cityName, std::function<voi
 
 void WeatherAPIClient::searchCities(const QString &query, std::function<void(const QVariantList&)> callback)
 {
-    if (m_apiKey.isEmpty()) {
-        callback(createErrorListResponse("API key not set"));
-        return;
+    // 使用本地城市代码映射进行搜索
+    QVariantList results;
+    
+    for (auto it = m_cityCodeMap.begin(); it != m_cityCodeMap.end(); ++it) {
+        const QString &cityName = it.key();
+        if (cityName.contains(query, Qt::CaseInsensitive)) {
+            QVariantMap cityInfo;
+            cityInfo["name"] = cityName;
+            cityInfo["code"] = it.value();
+            results.append(cityInfo);
+        }
     }
     
-    QString url = buildSearchUrl(query);
-    sendRequestForList(url, callback);
+    callback(results);
 }
 
 void WeatherAPIClient::sendRequest(const QString &url, std::function<void(const QVariantMap&)> callback)
@@ -258,183 +306,115 @@ void WeatherAPIClient::onNetworkReplyFinished()
 QVariantMap WeatherAPIClient::parseCurrentWeatherData(const QJsonObject &json)
 {
     QVariantMap result;
+    QJsonObject data = json.value("data").toObject();
+    QJsonObject cityInfo = json.value("cityInfo").toObject();
+    QJsonArray forecast = data.value("forecast").toArray();
+    QJsonObject todayForecast = forecast.at(0).toObject();
     
-    // 城市名称中文映射
-    QString originalCityName = json.value("name").toString();
-    QString chineseCityName = translateCityName(originalCityName);
-    
-    result["cityName"] = chineseCityName;
-    result["country"] = json.value("sys").toObject().value("country").toString();
-    
-    QJsonObject main = json.value("main").toObject();
-    double currentTemp = main.value("temp").toDouble();
-    double maxTemp = main.value("temp_max").toDouble();
-    double minTemp = main.value("temp_min").toDouble();
-    
-    result["temperature"] = QString::number(qRound(currentTemp)) + "°C"; // OpenWeather已经是摄氏度
-    result["maxMinTemp"] = QString::number(qRound(maxTemp)) + "°C / " + QString::number(qRound(minTemp)) + "°C";
-    result["humidity"] = main.value("humidity").toInt();
-    result["pressure"] = main.value("pressure").toInt();
-    result["feelsLike"] = qRound(main.value("feels_like").toDouble());
-    
-    QJsonArray weatherArray = json.value("weather").toArray();
-    if (!weatherArray.isEmpty()) {
-        QJsonObject weather = weatherArray.first().toObject();
-        QString originalDescription = weather.value("description").toString();
-        
-        // 将OpenWeather图标代码转换为emoji
-        QString iconCode = weather.value("icon").toString();
-        QString weatherIcon = "🌤️"; // 默认图标
-        QString chineseDescription = "未知"; // 默认中文描述
-        
-        if (iconCode.startsWith("01")) {
-            weatherIcon = "☀️"; // 晴天
-            chineseDescription = "晴";
-        }
-        else if (iconCode.startsWith("02")) {
-            weatherIcon = "⛅"; // 少云
-            chineseDescription = "少云";
-        }
-        else if (iconCode.startsWith("03") || iconCode.startsWith("04")) {
-            weatherIcon = "☁️"; // 多云
-            chineseDescription = "多云";
-        }
-        else if (iconCode.startsWith("09") || iconCode.startsWith("10")) {
-            weatherIcon = "🌧️"; // 雨
-            chineseDescription = "雨";
-        }
-        else if (iconCode.startsWith("11")) {
-            weatherIcon = "⛈️"; // 雷雨
-            chineseDescription = "雷雨";
-        }
-        else if (iconCode.startsWith("13")) {
-            weatherIcon = "❄️"; // 雪
-            chineseDescription = "雪";
-        }
-        else if (iconCode.startsWith("50")) {
-            weatherIcon = "🌫️"; // 雾
-            chineseDescription = "雾";
-        }
-        
-        // 优先使用API返回的中文描述，如果为空或英文则使用映射的中文描述
-        QString finalDescription = originalDescription;
-        if (originalDescription.isEmpty() || originalDescription.contains(QRegularExpression("[a-zA-Z]")) || originalDescription == "unknown") {
-            finalDescription = chineseDescription;
-        }
-        
-        result["weatherDescription"] = finalDescription;
-        result["weatherIcon"] = weatherIcon;
-        result["main"] = weather.value("main").toString();
+    result["cityName"] = cityInfo.value("city").toString();
+    result["wendu"] = data.value("wendu").toString() + "°C";
+    result["shidu"] = data.value("shidu").toString();
+    result["pm25"] = QString::number(data.value("pm25").toDouble());
+    result["quality"] = data.value("quality").toString();
+    result["ganmao"] = data.value("ganmao").toString();
+    result["fx"] = todayForecast.value("fx").toString();
+    result["fl"] = todayForecast.value("fl").toString();
+    result["type"] = todayForecast.value("type").toString();
+    result["sunrise"] = todayForecast.value("sunrise").toString();
+    result["sunset"] = todayForecast.value("sunset").toString();
+    result["notice"] = todayForecast.value("notice").toString();
+
+    // 为了与你现有的数据模型兼容，我们还需要填充一些字段
+    result["temperature"] = result["wendu"];
+    result["weatherDescription"] = result["type"];
+    result["maxMinTemp"] = todayForecast.value("high").toString() + " / " + todayForecast.value("low").toString();
+
+    // 构建detailedInfo数据结构
+    QVariantMap detailedInfo;
+    detailedInfo["humidity"] = result["shidu"].toString();
+    detailedInfo["windSpeed"] = result["fx"].toString() + " " + result["fl"].toString(); // 风向+风力
+    detailedInfo["rainfall"] = "0mm"; // API不提供当前降雨量
+    detailedInfo["airQuality"] = result["quality"].toString();
+    detailedInfo["airPressure"] = result["pm25"].toString() + " μg/m³"; // 使用PM2.5数据代替气压
+    detailedInfo["uvIndex"] = "中等"; // 设置默认UV指数
+    result["detailedInfo"] = detailedInfo;
+
+    // 解析未来几天的预报
+    QVariantList weeklyForecastList;
+    for(int i = 0; i < forecast.size(); ++i) {
+        QVariantMap dayForecast;
+        QJsonObject forecastObj = forecast.at(i).toObject();
+        dayForecast["date"] = forecastObj.value("ymd").toString();
+        dayForecast["week"] = forecastObj.value("week").toString();
+        dayForecast["high"] = forecastObj.value("high").toString();
+        dayForecast["low"] = forecastObj.value("low").toString();
+        dayForecast["type"] = forecastObj.value("type").toString();
+        weeklyForecastList.append(dayForecast);
     }
-    
-    QJsonObject wind = json.value("wind").toObject();
-    result["windSpeed"] = wind.value("speed").toDouble();
-    result["windDirection"] = wind.value("deg").toInt();
-    
-    QJsonObject sys = json.value("sys").toObject();
-    result["sunrise"] = QDateTime::fromSecsSinceEpoch(sys.value("sunrise").toInt()).toString("hh:mm");
-    result["sunset"] = QDateTime::fromSecsSinceEpoch(sys.value("sunset").toInt()).toString("hh:mm");
-    
-    result["visibility"] = json.value("visibility").toInt() / 1000; // 转换为公里
-    result["timezone"] = json.value("timezone").toInt();
-    
-    // 添加调试日志
-    qDebug() << "Parsed weather data:" << result;
-    
+    result["weeklyForecast"] = weeklyForecastList;
+
     return result;
 }
 
 QVariantMap WeatherAPIClient::parseWeeklyForecastData(const QJsonObject &json)
 {
     QVariantMap result;
+    QJsonObject data = json.value("data").toObject();
+    QJsonObject cityInfo = json.value("cityInfo").toObject();
+    QJsonArray forecast = data.value("forecast").toArray();
     
-    QJsonObject city = json.value("city").toObject();
-    result["cityName"] = city.value("name").toString();
-    result["country"] = city.value("country").toString();
+    result["cityName"] = cityInfo.value("city").toString();
     
-    QVariantList forecast;
     QVariantList recentDaysName;
     QVariantList recentDaysMaxMinTempreture;
     QVariantList recentDaysWeatherDescriptionIcon;
+    QVariantList forecastList;
     
-    QJsonArray list = json.value("list").toArray();
-    
-    // 按日期分组数据（OpenWeather API返回每3小时的数据）
-    QMap<QString, QList<QJsonObject>> dailyData;
-    
-    for (const QJsonValue &value : list) {
-        QJsonObject item = value.toObject();
-        qint64 timestamp = item.value("dt").toInt();
-        QDateTime dateTime = QDateTime::fromSecsSinceEpoch(timestamp);
-        QString dateKey = dateTime.toString("yyyy-MM-dd");
+    // 处理预报数据（新API直接提供每日数据）
+    for (int i = 0; i < forecast.size() && i < 7; ++i) {
+        QJsonObject dayData = forecast.at(i).toObject();
         
-        dailyData[dateKey].append(item);
-    }
-    
-    // 处理每一天的数据
-    QStringList sortedDates = dailyData.keys();
-    std::sort(sortedDates.begin(), sortedDates.end());
-    
-    for (const QString &date : sortedDates) {
-        if (recentDaysName.size() >= 7) break; // 限制为7天
-        
-        const QList<QJsonObject> &dayItems = dailyData[date];
-        if (dayItems.isEmpty()) continue;
-        
-        // 计算当天的最高最低温度
-        double minTemp = 1000, maxTemp = -1000;
-        QString weatherIcon = "☀️";
-        QString weatherDescription = "晴";
-        
-        for (const QJsonObject &item : dayItems) {
-            QJsonObject main = item.value("main").toObject();
-            double temp = main.value("temp").toDouble();
-            minTemp = qMin(minTemp, temp);
-            maxTemp = qMax(maxTemp, temp);
-            
-            // 使用中午时段的天气图标和描述
-            qint64 timestamp = item.value("dt").toInt();
-            QDateTime dateTime = QDateTime::fromSecsSinceEpoch(timestamp);
-            int hour = dateTime.time().hour();
-            if (hour >= 12 && hour <= 15) {
-                QJsonArray weatherArray = item.value("weather").toArray();
-                if (!weatherArray.isEmpty()) {
-                    QJsonObject weather = weatherArray.first().toObject();
-                    weatherDescription = weather.value("description").toString();
-                    QString iconCode = weather.value("icon").toString();
-                    
-                    // 将OpenWeather图标代码转换为emoji
-                    if (iconCode.startsWith("01")) weatherIcon = "☀️"; // 晴天
-                    else if (iconCode.startsWith("02")) weatherIcon = "⛅"; // 少云
-                    else if (iconCode.startsWith("03") || iconCode.startsWith("04")) weatherIcon = "☁️"; // 多云
-                    else if (iconCode.startsWith("09") || iconCode.startsWith("10")) weatherIcon = "🌧️"; // 雨
-                    else if (iconCode.startsWith("11")) weatherIcon = "⛈️"; // 雷雨
-                    else if (iconCode.startsWith("13")) weatherIcon = "❄️"; // 雪
-                    else if (iconCode.startsWith("50")) weatherIcon = "🌫️"; // 雾
-                    else weatherIcon = "🌤️"; // 默认
-                }
-            }
-        }
+        // 获取日期和星期
+        QString week = dayData.value("week").toString();
+        QString ymd = dayData.value("ymd").toString();
         
         // 格式化日期显示
-        QDateTime dateTime = QDateTime::fromString(date, "yyyy-MM-dd");
-        QString displayDate = dateTime.toString("MM-dd");
+        if (i == 0) {
+            recentDaysName.append("今天");
+        } else if (i == 1) {
+            recentDaysName.append("明天");
+        } else {
+            recentDaysName.append(week);
+        }
         
-        // 添加到UI期望的数组格式
-        recentDaysName.append(displayDate);
-        recentDaysMaxMinTempreture.append(QString("%1°C / %2°C")
-                                         .arg(qRound(maxTemp))
-                                         .arg(qRound(minTemp)));
+        // 获取温度信息
+        QString high = dayData.value("high").toString();
+        QString low = dayData.value("low").toString();
+        recentDaysMaxMinTempreture.append(high + " / " + low);
+        
+        // 获取天气类型并转换为图标
+        QString type = dayData.value("type").toString();
+        QString weatherIcon = "🌤️"; // 默认图标
+        
+        if (type.contains("晴")) weatherIcon = "☀️";
+        else if (type.contains("多云")) weatherIcon = "☁️";
+        else if (type.contains("阴")) weatherIcon = "☁️";
+        else if (type.contains("雨")) weatherIcon = "🌧️";
+        else if (type.contains("雪")) weatherIcon = "❄️";
+        else if (type.contains("雾")) weatherIcon = "🌫️";
+        else if (type.contains("雷")) weatherIcon = "⛈️";
+        
         recentDaysWeatherDescriptionIcon.append(weatherIcon);
         
-        // 保留原始forecast格式以备其他用途
-        QVariantMap dayData;
-        dayData["date"] = date;
-        dayData["tempMin"] = qRound(minTemp);
-        dayData["tempMax"] = qRound(maxTemp);
-        dayData["description"] = weatherDescription;
-        dayData["icon"] = weatherIcon;
-        forecast.append(dayData);
+        // 保留原始数据格式
+        QVariantMap dayForecast;
+        dayForecast["date"] = ymd;
+        dayForecast["week"] = week;
+        dayForecast["high"] = high;
+        dayForecast["low"] = low;
+        dayForecast["type"] = type;
+        dayForecast["icon"] = weatherIcon;
+        forecastList.append(dayForecast);
     }
     
     // 设置UI期望的数据格式
@@ -444,115 +424,19 @@ QVariantMap WeatherAPIClient::parseWeeklyForecastData(const QJsonObject &json)
     weeklyForecast["recentDaysWeatherDescriptionIcon"] = recentDaysWeatherDescriptionIcon;
     
     result["weeklyForecast"] = weeklyForecast;
-    result["forecast"] = forecast; // 保留原始数据
+    result["forecast"] = forecastList;
+    
+    qDebug() << "Parsed weekly forecast with" << recentDaysName.size() << "days";
     
     return result;
 }
 
 QVariantMap WeatherAPIClient::parseDailyForecastData(const QJsonObject &json)
 {
-    QVariantMap result;
+    // 新API的每日预报数据与周预报数据结构相同，直接复用解析逻辑
+    QVariantMap result = parseWeeklyForecastData(json);
     
-    QJsonObject city = json.value("city").toObject();
-    result["cityName"] = city.value("name").toString();
-    result["country"] = city.value("country").toString();
-    
-    QVariantList forecast;
-    QVariantList recentDaysName;
-    QVariantList recentDaysMaxMinTempreture;
-    QVariantList recentDaysWeatherDescriptionIcon;
-    
-    QJsonArray list = json.value("list").toArray();
-    
-    // 用于按日期分组数据（5天预报API返回每3小时的数据）
-    QMap<QString, QList<QJsonObject>> dailyData;
-    
-    // 按日期分组所有数据点
-    for (const QJsonValue &value : list) {
-        QJsonObject item = value.toObject();
-        qint64 timestamp = item.value("dt").toInt();
-        QDateTime dateTime = QDateTime::fromSecsSinceEpoch(timestamp);
-        QString dateKey = dateTime.toString("yyyy-MM-dd");
-        
-        dailyData[dateKey].append(item);
-    }
-    
-    // 处理每一天的数据
-    QStringList sortedDates = dailyData.keys();
-    std::sort(sortedDates.begin(), sortedDates.end());
-    
-    for (const QString &dateKey : sortedDates) {
-        if (recentDaysName.size() >= 5) break; // 限制为5天（API限制）
-        
-        const QList<QJsonObject> &dayItems = dailyData[dateKey];
-        if (dayItems.isEmpty()) continue;
-        
-        // 计算当天的最高最低温度
-        double minTemp = std::numeric_limits<double>::max();
-        double maxTemp = std::numeric_limits<double>::lowest();
-        QString weatherIcon = "☀️";
-        QString weatherDescription = "晴";
-        
-        // 遍历当天所有时间点的数据
-        for (const QJsonObject &item : dayItems) {
-            QJsonObject main = item.value("main").toObject();
-            double temp = main.value("temp").toDouble();
-            minTemp = std::min(minTemp, temp);
-            maxTemp = std::max(maxTemp, temp);
-            
-            // 使用中午时段的天气信息作为代表
-            qint64 timestamp = item.value("dt").toInt();
-            QDateTime dateTime = QDateTime::fromSecsSinceEpoch(timestamp);
-            int hour = dateTime.time().hour();
-            if (hour >= 11 && hour <= 14) { // 中午时段
-                QJsonArray weatherArray = item.value("weather").toArray();
-                if (!weatherArray.isEmpty()) {
-                    QJsonObject weather = weatherArray.first().toObject();
-                    weatherDescription = weather.value("description").toString();
-                    QString iconCode = weather.value("icon").toString();
-                    
-                    // 将OpenWeather图标代码转换为emoji
-                    if (iconCode.startsWith("01")) weatherIcon = "☀️"; // 晴天
-                    else if (iconCode.startsWith("02")) weatherIcon = "⛅"; // 少云
-                    else if (iconCode.startsWith("03") || iconCode.startsWith("04")) weatherIcon = "☁️"; // 多云
-                    else if (iconCode.startsWith("09") || iconCode.startsWith("10")) weatherIcon = "🌧️"; // 雨
-                    else if (iconCode.startsWith("11")) weatherIcon = "⛈️"; // 雷雨
-                    else if (iconCode.startsWith("13")) weatherIcon = "❄️"; // 雪
-                    else if (iconCode.startsWith("50")) weatherIcon = "🌫️"; // 雾
-                    else weatherIcon = "🌤️"; // 默认
-                }
-            }
-        }
-        
-        // 格式化日期显示
-        QDateTime dateTime = QDateTime::fromString(dateKey, "yyyy-MM-dd");
-        QString displayDate = dateTime.toString("MM-dd");
-        
-        // 添加到UI期望的数组格式
-        recentDaysName.append(displayDate);
-        recentDaysMaxMinTempreture.append(QString("%1°C / %2°C")
-                                         .arg(qRound(maxTemp))
-                                         .arg(qRound(minTemp)));
-        recentDaysWeatherDescriptionIcon.append(weatherIcon);
-        
-        // 保留原始forecast格式以备其他用途
-        QVariantMap dayData;
-        dayData["date"] = dateKey;
-        dayData["tempMin"] = qRound(minTemp);
-        dayData["tempMax"] = qRound(maxTemp);
-        dayData["description"] = weatherDescription;
-        dayData["icon"] = weatherIcon;
-        forecast.append(dayData);
-    }
-    
-    // 设置UI期望的数据格式
-    QVariantMap weeklyForecast;
-    weeklyForecast["recentDaysName"] = recentDaysName;
-    weeklyForecast["recentDaysMaxMinTempreture"] = recentDaysMaxMinTempreture;
-    weeklyForecast["recentDaysWeatherDescriptionIcon"] = recentDaysWeatherDescriptionIcon;
-    
-    result["weeklyForecast"] = weeklyForecast;
-    result["forecast"] = forecast; // 保留原始数据
+    qDebug() << "Parsed daily forecast data for city:" << result.value("cityName").toString();
     
     return result;
 }
@@ -610,17 +494,10 @@ QVariantList WeatherAPIClient::parseCitySearchData(const QJsonArray &json)
     return result;
 }
 
-QString WeatherAPIClient::buildCurrentWeatherUrl(const QString &cityName)
+QString WeatherAPIClient::buildCurrentWeatherUrl(const QString &cityCode)
 {
-    QUrl url(m_baseUrl + "/weather");
-    QUrlQuery query;
-    query.addQueryItem("q", cityName);
-    query.addQueryItem("appid", m_apiKey);
-    query.addQueryItem("units", "metric"); // 使用摄氏度
-    query.addQueryItem("lang", "zh_cn"); // 添加中文语言参数
-    url.setQuery(query);
-    
-    return url.toString();
+    // 新的API直接在URL后面拼接城市代码
+    return m_baseUrl + cityCode;
 }
 
 QString WeatherAPIClient::buildForecastUrl(const QString &cityName)
@@ -760,4 +637,29 @@ QString WeatherAPIClient::translateCityName(const QString &englishName)
     
     // 如果找到映射则返回中文名，否则返回原英文名
     return cityNameMap.value(englishName, englishName);
+}
+
+void WeatherAPIClient::loadCityCodes()
+{
+    QFile file(":/WeatherAPP/citycode-2019-08-23.json"); // 使用正确的资源路径
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning("Couldn't open citycode file.");
+        return;
+    }
+
+    QByteArray cityData = file.readAll();
+    QJsonDocument cityDoc = QJsonDocument::fromJson(cityData);
+    QJsonArray cityArr = cityDoc.array();
+
+    int loadedCount = 0;
+    for (const QJsonValue &value : cityArr) {
+        QJsonObject cityObj = value.toObject();
+        QString cityName = cityObj["city_name"].toString();
+        QString cityCode = cityObj["city_code"].toString();
+        if (!cityName.isEmpty() && !cityCode.isEmpty()) {
+            m_cityCodeMap[cityName] = cityCode;
+            loadedCount++;
+        }
+    }
+    qDebug() << "Loaded" << loadedCount << "cities from citycode file.";
 }

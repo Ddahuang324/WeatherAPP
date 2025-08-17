@@ -4,9 +4,8 @@ import "../common"
 import "."
 
 Column {
-        width: parent.width - 40
-        height: parent.height - 40
-        anchors.centerIn: parent
+        anchors.fill: parent
+        anchors.margins: 20
         spacing: 20
         
         // 天气数据属性
@@ -24,21 +23,16 @@ Column {
             cityName : parent.cityName
             fontSize : 50
             font.bold : true
-            anchors.left: undefined
-            anchors.top: undefined
         }
         //详细信息组件
         GridLayout{
-            width: parent.width - 100
-            height: parent.height - cityNameComponent.height -80
-            anchors.top : cityNameComponent.bottom
-            anchors.topMargin: 50
-            anchors.left: undefined
-            anchors.leftMargin: 50
+            width: parent.width
+            height: parent.height - cityNameComponent.height - 40
             columns: 3
             rows: 2
-            columnSpacing: 40
-            rowSpacing: 20
+            columnSpacing: 30
+            rowSpacing: 30
+            Layout.alignment: Qt.AlignCenter
 
             //湿度
             DetailedInfoLabel{
@@ -53,7 +47,7 @@ Column {
             //风速
             DetailedInfoLabel{
                 labelText: "风速"
-                valueText: cityWind || "12km/h"
+                valueText: cityWind || "东南风 2级"
                 iconText: "💨"
                 fontSize: 16
                 Layout.fillWidth: true
@@ -80,11 +74,11 @@ Column {
                 Layout.fillHeight: true
             }
             
-            //气压
+            //PM2.5
             DetailedInfoLabel{
-                labelText: "气压"
-                valueText: cityAirPressure || "1013hPa"
-                iconText: "📊"
+                labelText: "PM2.5"
+                valueText: cityAirPressure || "25 μg/m³"
+                iconText: "🌫️"
                 fontSize: 16
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -93,7 +87,7 @@ Column {
             //紫外线指数
             DetailedInfoLabel{
                 labelText: "紫外线"
-                valueText: cityUVI || "5"
+                valueText: cityUVI || "中等"
                 iconText: "☀️"
                 fontSize: 16
                 Layout.fillWidth: true

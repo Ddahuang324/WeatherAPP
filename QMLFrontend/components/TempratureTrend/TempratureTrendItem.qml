@@ -46,8 +46,7 @@ Rectangle {
             cityName : tempratureTrendItem.currentCityName
             fontSize : 50
             font.bold : true
-            anchors.left: undefined
-            anchors.top: undefined
+            width: parent.width
         }
 
         // 左侧列表/右侧视图

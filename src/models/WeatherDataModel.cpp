@@ -8,6 +8,8 @@ WeatherDataModel::WeatherDataModel(QObject *parent) : QObject(parent)
     , m_weatherIcon("🌤️")
     , m_weatherDescription("未知")
     , m_maxMinTemp("--°C / --°C")
+    , m_ganmao("")
+    , m_notice("")
 {
     // 初始化数据
 }
@@ -76,6 +78,22 @@ void WeatherDataModel::setSunriseInfo(const QVariantMap &sunriseInfo)
     }
 }
 
+void WeatherDataModel::setGanmao(const QString &ganmao)
+{
+    if (m_ganmao != ganmao) {
+        m_ganmao = ganmao;
+        emit ganmaoChanged();
+    }
+}
+
+void WeatherDataModel::setNotice(const QString &notice)
+{
+    if (m_notice != notice) {
+        m_notice = notice;
+        emit noticeChanged();
+    }
+}
+
 WeatherDataModel* WeatherDataModel::fromRawData(const QVariantMap& rawData, QObject *parent){
     if(rawData.isEmpty()){
         return createEmpty(parent);
@@ -94,11 +112,37 @@ WeatherDataModel* WeatherDataModel::fromRawData(const QVariantMap& rawData, QObj
     // 设置最高和最低温度
     model->setMaxMinTemp(rawData.value("maxMinTemp", "--°C / --°C").toString());
     // 设置每周天气预报
-    model->setWeeklyForecast(rawData.value("weeklyForecast").toMap());
+    QVariantMap weeklyForecastMap;
+    QVariantList weeklyForecastList = rawData.value("weeklyForecast").toList();
+    
+    // 提取数据到对应的数组
+    QVariantList recentDaysName;
+    QVariantList recentDaysMaxMinTempreture;
+    QVariantList recentDaysWeatherDescriptionIcon;
+    
+    for (int i = 0; i < weeklyForecastList.size(); ++i) {
+        QVariantMap dayData = weeklyForecastList[i].toMap();
+        recentDaysName.append(dayData.value("week", "").toString());
+        QString maxMinTemp = dayData.value("high", "").toString() + " / " + dayData.value("low", "").toString();
+        recentDaysMaxMinTempreture.append(maxMinTemp);
+        recentDaysWeatherDescriptionIcon.append(dayData.value("type", "").toString());
+        weeklyForecastMap[QString::number(i)] = dayData;
+    }
+    
+    // 添加处理后的数组到weeklyForecastMap
+    weeklyForecastMap["recentDaysName"] = recentDaysName;
+    weeklyForecastMap["recentDaysMaxMinTempreture"] = recentDaysMaxMinTempreture;
+    weeklyForecastMap["recentDaysWeatherDescriptionIcon"] = recentDaysWeatherDescriptionIcon;
+    
+    model->setWeeklyForecast(weeklyForecastMap);
     // 设置详细天气信息
     model->setDetailedInfo(rawData.value("detailedInfo").toMap());
     // 设置日出信息
     model->setSunriseInfo(rawData.value("sunriseInfo").toMap());
+    // 设置感冒指数
+    model->setGanmao(rawData.value("ganmao", "").toString());
+    // 设置注意事项
+    model->setNotice(rawData.value("notice", "").toString());
 
     return model;  
 }
@@ -130,6 +174,8 @@ QVariantMap WeatherDataModel::toObject() const{
         obj["weeklyForecast"] = m_weeklyForecast;
         obj["detailedInfo"] = m_detailedInfo;
         obj["sunriseInfo"] = m_sunriseInfo;
+        obj["ganmao"] = m_ganmao;
+        obj["notice"] = m_notice;
         
         // 返回填充好的 JSON 对象
         return obj;
@@ -165,6 +211,12 @@ void WeatherDataModel::updateData(const QVariantMap &newData){
     }
     if (newData.contains("sunriseInfo")) {
         setSunriseInfo(newData["sunriseInfo"].toMap());
+    }
+    if (newData.contains("ganmao")) {
+        setGanmao(newData["ganmao"].toString());
+    }
+    if (newData.contains("notice")) {
+        setNotice(newData["notice"].toString());
     }
 }
 

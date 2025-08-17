@@ -29,6 +29,12 @@ BaseView {
     function updateCityData(data) {
         weatherData = data
         if (data) {
+            console.log("TemperatureTrendView: weatherData updated")
+            console.log("TemperatureTrendView: weeklyForecast:", JSON.stringify(data.weeklyForecast))
+            if (data.weeklyForecast) {
+                console.log("TemperatureTrendView: recentDaysName:", JSON.stringify(data.weeklyForecast.recentDaysName))
+                console.log("TemperatureTrendView: recentDaysMaxMinTempreture:", JSON.stringify(data.weeklyForecast.recentDaysMaxMinTempreture))
+            }
             setLoading(false)
             setError("")
         }

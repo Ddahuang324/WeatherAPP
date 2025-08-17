@@ -10,6 +10,7 @@
 #include <QVariantMap>
 #include <QVariantList>
 #include <QTimer>
+#include <QMap>
 #include <functional>
 
 class WeatherAPIClient : public QObject
@@ -74,12 +75,18 @@ private:
     // 城市名称翻译
     QString translateCityName(const QString &englishName);
     
+    // 城市代码加载
+    void loadCityCodes();
+    
     // 网络管理
     QNetworkAccessManager *m_networkManager;
     
     // API配置
     QString m_apiKey;
     QString m_baseUrl;
+    
+    // 城市代码映射
+    QMap<QString, QString> m_cityCodeMap;
     
     // 请求回调映射
     QHash<QNetworkReply*, std::function<void(const QVariantMap&)>> m_callbacks;

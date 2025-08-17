@@ -65,6 +65,8 @@ qt_add_qml_module(appWeatherAPP
         QMLFrontend/views/DetailedInfoView.qml
         QMLFrontend/views/SunriseSunsetView.qml
         QMLFrontend/views/qmldir
+    RESOURCES
+        citycode-2019-08-23.json
 )
 
 set_target_properties(appWeatherAPP PROPERTIES
