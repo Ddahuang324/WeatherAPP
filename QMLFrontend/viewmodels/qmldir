@@ -1,0 +1,3 @@
+module viewmodels
+WeatherViewModel 1.0 WeatherViewModel.qml
+NavigationViewModel 1.0 NavigationViewModel.qml
